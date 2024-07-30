@@ -10,17 +10,18 @@ const getAllCampaignsFromWorkspace = async (req, res) => {
 
         if (!workspaceId) throw new Error('Missing required fields');
 
-        // acá me quedé
-
         const Workspace = mongoose.model('Workspace');
 
-        console.log(workspaceId, "workspaceId");
-
-        const campaigns = await Workspace.findById({ _id: workspaceId }).select('-_id campaigns');
+        const campaigns = await Workspace.findById({ _id: workspaceId })
+            .select('-_id campaigns')
+            .populate({
+                path: 'campaigns',
+                select: 'name status progress sent click replied opportunities'  // Selecciona solo los campos que necesitas
+            });
 
         console.log(campaigns);
 
-        res.success("Campaigns retrieved successfully", campaigns);
+        res.success("Campaigns retrieved", campaigns);
 
     } catch (error) {
         console.log(error)
@@ -45,6 +46,8 @@ const createCampaign = async (req, res) => {
         });
 
         const campaign = await newCampaign.save();
+
+        const updateCampaigngsRegistryInWorkspace = await Workspace.findByIdAndUpdate(workspace, { $push: { campaigns: campaign._id } });
         res.success("Campaign created successfully", campaign);
 
         //TODO: Evaluar la respuesta que se dará cuando se confirme la creación de la campaña
