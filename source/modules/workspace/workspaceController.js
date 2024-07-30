@@ -3,16 +3,14 @@ const mongoose = require('mongoose');
 const Workspace = require('./models/workspaceModel');
 const WorkspaceMemberRole = require('./models/workspaceMemberRoleModel');
 const helpers = require('../../common/helpers/helper');
-
+const { ObjectId } = mongoose.Types;
 
 const getWorkspaceDefaultValues = async (req, res) => {
-
-
     console.log("AJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
     // Code for workspaceQuery
-    const { workspaceUID } = req.params;
+    const { workspaceId } = req.params;
 
-    const workspace = await Workspace.findOne({ UID: workspaceUID })
+    const workspace = await Workspace.findById({ _id: workspaceId })
         .select('name UID owner campaigns plan mailAccounts');
 
     if (!workspace) {
@@ -35,6 +33,58 @@ const getWorkspaceMailAccounts = async (req, res) => {
 const getWorkspaceSettings = async (req, res) => {
     const { workspaceUID } = req.params;
 }
+
+// Campaign
+const getAllCampaignsFromWorkspace = async (req, res) => {
+    try {
+        let { workspaceId } = req.params;
+        workspaceId = new ObjectId(workspaceId);
+
+        if (!workspaceId) throw new Error('Missing required fields');
+
+        const Workspace = mongoose.model('Workspace');
+
+        const campaigns = await Workspace.findById({ _id: workspaceId })
+            .select('-_id campaigns')
+            .populate({
+                path: 'campaigns',
+                select: 'name status progress sent click replied opportunities'  // Selecciona solo los campos que necesitas
+            });
+
+        console.log(campaigns);
+
+        res.success("Campaigns retrieved", campaigns);
+
+    } catch (error) {
+        console.log(error)
+        return res.error(error.message);
+    }
+};
+
+// Emails
+const getAllEmailsFromWorkspace = async (req, res) => {
+    try {
+        let { workspaceId } = req.params;
+        workspaceId = new ObjectId(workspaceId);
+
+        if (!workspaceId) throw new Error('Missing required fields');
+
+        const emails = await Workspace.findById(workspaceId)
+            .select('-_id mailAccounts')
+            .populate({
+                path: 'mailAccounts',
+                select: 'email'
+            });
+
+        console.log(emails);
+        res.success("Emails retrieved", emails);
+    }
+    catch (error) {
+        console.log(error)
+        return res.error(error.message);
+    }
+};
+
 
 // CRUD
 const createWorkspaceFunction = async (creatorUserId, workspaceData) => {
@@ -94,5 +144,7 @@ module.exports = {
     getWorkspaceMailAccounts,
     getWorkspaceSettings,
 
+    getAllCampaignsFromWorkspace,
+    getAllEmailsFromWorkspace,
     createWorkspaceFunction
 };

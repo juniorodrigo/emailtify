@@ -8,18 +8,18 @@ const bcrypt = require('bcrypt');
 const addSmtpMailAccount = async (req, res) => {
     try {
         const accountConfigs = req.body
-        const { firstName, lastName, email, password, imapHost, imapPort, smtpHost, smtpPort } = accountConfigs;
+        const { firstName, lastName, email, password, imapHost, imapPort, smtpHost, smtpPort, workspaceId } = accountConfigs;
 
-        if (!firstName || !lastName || !email || !password || !imapHost || !imapPort || !smtpHost || !smtpPort) {
+        if (!firstName || !lastName || !email || !password || !imapHost || !imapPort || !smtpHost || !smtpPort || !workspaceId) {
             throw new Error('Faltan campos requeridos');
         }
         if (!validateEmail(email)) throw new Error('Formato de email inválido');
 
         // Validación de no existencia de la cuenta de email
+        // TODO: Validar que un mismo correo puede existir para más de un workspace. el duplicado solo puede verificar para el workspace mismo.
         const existingMail = await MailAccount.findOne({ email });
-        if (existingMail) {
-            return res.error('Email already exists', 400, 'Duplicate Email');
-        }
+        if (existingMail) throw new Error('Ya existe una cuenta de email con ese email');
+
 
         // Valida que la conexión al servidor IMAP sea exitosa
         const imapConnection = await mailingServices.validateImapConnection(email, password, imapHost, imapPort);
@@ -40,8 +40,16 @@ const addSmtpMailAccount = async (req, res) => {
 
         if (!resultx) throw new Error("No se pudo agregar la cuenta SMTP");
 
+        // Se ingresa el registro al workspace
+        // TODO: Analizar extraer este bloque a una interfaz, para evitar importar modelo Workspace
+        const Workspace = mongoose.model('Workspace');
+        const workspaceRegistry = await Workspace.findByIdAndUpdate(workspaceId, { $push: { mailAccounts: resultx._id } });
+
+        if (!workspaceRegistry) throw new Error('No se pudo agregar la cuenta SMTP al workspace');
+
         res.success('Cuenta de email SMTP agregada correctamente');
     } catch (error) {
+        console.log(error);
         res.error(error.message);
     }
 };
