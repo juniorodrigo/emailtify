@@ -1,13 +1,14 @@
 const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid');
 
 const campaignSchema = new mongoose.Schema({
-    _id: {
-        type: String,
-        default: uuidv4,
-    },
     name: { type: String, required: true },
-    workspace: { type: String, default: '' },
+    workspace: { type: mongoose.Schema.Types.ObjectId, ref: 'Workspace', default: '' },
+    status: { type: String, default: 'draft' },
+    progress: { type: Number, default: 0 },
+    sent: { type: Number, default: 0 },
+    click: { type: Number, default: 0 },
+    replied: { type: Number, default: 0 },
+    opportunities: { type: Number, default: 0 },
 })
 
 module.exports = campaignSchema;
