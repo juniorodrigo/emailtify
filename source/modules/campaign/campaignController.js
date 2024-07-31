@@ -35,8 +35,8 @@ const getCampaignInfo = async (req, res) => {
 
 const createCampaign = async (req, res) => {
     try {
-
         const { name, workspaceId } = req.body;
+
         if (!name || !workspaceId) throw new Error('Missing required fields');
 
         const Workspace = mongoose.model('Workspace');
@@ -44,7 +44,7 @@ const createCampaign = async (req, res) => {
 
         const newCampaign = new Campaign({
             name,
-            workspace,
+            workspace: workspaceId,
         });
 
         const campaign = await newCampaign.save();
