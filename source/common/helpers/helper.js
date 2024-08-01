@@ -22,6 +22,3 @@ module.exports.uuidToBinary = (uuid) => {
     const buffer = Buffer.from(hex, 'hex');
     return new Binary(buffer, Binary.SUBTYPE_UUID);
 }
-
-
-

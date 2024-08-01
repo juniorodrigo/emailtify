@@ -3,32 +3,6 @@ const helpers = require('../../common/helpers/helper');
 const Campaign = require('./models/campaignModel');
 const { ObjectId } = mongoose.Types;
 
-const getAllCampaignsFromWorkspace = async (req, res) => {
-    try {
-        let { workspaceId } = req.params;
-        workspaceId = new ObjectId(workspaceId);
-
-        if (!workspaceId) throw new Error('Missing required fields');
-
-        const Workspace = mongoose.model('Workspace');
-
-        const campaigns = await Workspace.findById({ _id: workspaceId })
-            .select('-_id campaigns')
-            .populate({
-                path: 'campaigns',
-                select: 'name status progress sent click replied opportunities'  // Selecciona solo los campos que necesitas
-            });
-
-        console.log(campaigns);
-
-        res.success("Campaigns retrieved", campaigns);
-
-    } catch (error) {
-        console.log(error)
-        return res.error(error.message);
-    }
-};
-
 const getCampaignInfo = async (req, res) => {
     console.log("xd");
 };
@@ -112,11 +86,101 @@ const getCampaignMailAccounts = async (req, res) => {
     }
 };
 
+// TODO: Probar settings
+const updateBasicSettings = async (req, res) => {
+    try {
+        const { campaignId } = req.params;
+        const update = req.body; // Solo la modificación específica
+
+        const campaign = await Campaign.findByIdAndUpdate(
+            campaignId,
+            { $set: { basicSettings: update } },
+            { new: true }
+        );
+        if (!campaign) throw new Error('Campaign not found');
+
+        res.success("Basic settings updated successfully", campaign);
+    } catch (error) {
+        console.log(error);
+        return res.error(error.message);
+    }
+};
+
+const updateSendingPattern = async (req, res) => {
+    try {
+        const { campaignId } = req.params;
+        const update = req.body; // Solo la modificación específica
+
+        const campaign = await Campaign.findByIdAndUpdate(
+            campaignId,
+            { $set: { sendingPattern: update } },
+            { new: true }
+        );
+        if (!campaign) throw new Error('Campaign not found');
+
+        res.success("Sending pattern updated successfully", campaign);
+    } catch (error) {
+        console.log(error);
+        return res.error(error.message);
+    }
+};
+
+const updateCcAndBcc = async (req, res) => {
+    try {
+        const { campaignId } = req.params;
+        const update = req.body; // Solo la modificación específica
+
+        const campaign = await Campaign.findByIdAndUpdate(
+            campaignId,
+            { $set: { ccAndBcc: update } },
+            { new: true }
+        );
+        if (!campaign) throw new Error('Campaign not found');
+
+        res.success("CC and BCC settings updated successfully", campaign);
+    } catch (error) {
+        console.log(error);
+        return res.error(error.message);
+    }
+};
+
+const createSchedule = async (req, res) => {
+    try {
+        const { campaignId } = req.params;
+        const { name, timing } = req.body;
+
+        if (!name || !timing) throw new Error('Missing required fields');
+
+        const newSchedule = new Schedule({
+            name,
+            timing,
+        });
+
+        const schedule = await newSchedule.save();
+
+        const campaign = await Campaign.findByIdAndUpdate(
+            campaignId,
+            { $push: { schedule: schedule._id } },
+            { new: true }
+        );
+        if (!campaign) throw new Error('Campaign not found');
+
+        res.success("Schedule created successfully", { campaign, schedule });
+    } catch (error) {
+        console.log(error);
+        return res.error(error.message);
+    }
+};
+
 module.exports = {
-    getAllCampaignsFromWorkspace,
     getCampaignInfo,
     createCampaign,
     addMailAccountToCampaign,
 
-    getCampaignMailAccounts
+    getCampaignMailAccounts,
+
+    updateBasicSettings,
+    updateSendingPattern,
+    updateCcAndBcc,
+    createSchedule
 }
