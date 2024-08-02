@@ -25,6 +25,8 @@ const startServer = async () => {
         app.use(express.json());
         app.use(responseMiddleware);
 
+
+        // TODO: Todas las rutas deben validarse con token y con dato dentro del token para saber si tiene permisos sobre el recurso
         // Rutas
         app.use('/authn', authnRouter);
         app.use('/authz', authzRouter);

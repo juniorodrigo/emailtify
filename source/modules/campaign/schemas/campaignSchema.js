@@ -1,21 +1,21 @@
 const mongoose = require('mongoose');
-const { Schema } = mongoose.Schema;
+const { Schema } = mongoose;
 
 const basicSettingsSubSchema = new Schema({
     stopSendingOnReply: {
-        type: {
+        type: new Schema({
             enabled: { type: Boolean, default: true },
             stopOnAutoReply: { type: Boolean, default: true },
-        }, default: {
+        }, { _id: false }), default: {
             enabled: true,
             stopOnAutoReply: true
         }
     },
     openTracking: {
-        type: {
+        type: new Schema({
             enabled: { type: Boolean, default: true },
             linkTracking: { type: Boolean, default: true },
-        }, default: {
+        }, { _id: false }), default: {
             enabled: true,
             linkTracking: false
         }
@@ -26,17 +26,17 @@ const basicSettingsSubSchema = new Schema({
 
 const sendingPatternSubSchema = new Schema({
     timeGapBetweenEmails: {
-        type: {
+        type: new Schema({
             fixed: { type: Number, default: 0 },
             random: { type: Number, default: 0 },
-        }, default: { fixed: 7, random: 0 }
+        }, { _id: false }), default: { fixed: 7, random: 0 }
     },
     maxNewLeads: { type: Number, default: 1000000, min: 0 },
     allowRiskyEmails: {
-        type: {
+        type: new Schema({
             enabled: { type: Boolean, default: true },
             disableBounceProtect: { type: Boolean, default: false },
-        }, default: {
+        }, { _id: false }), default: {
             enabled: false,
             disableBounceProtect: false
         }
@@ -47,7 +47,6 @@ const ccAndBccSubSchema = new Schema({
     cc: { type: [String], default: [] },
     bcc: { type: [String], default: [] },
 }, { _id: false });
-
 
 
 const campaignSchema = new mongoose.Schema({

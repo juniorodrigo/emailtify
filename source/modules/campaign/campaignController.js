@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const helpers = require('../../common/helpers/helper');
 const Campaign = require('./models/campaignModel');
+const Schedule = require('./models/scheduleModel');
 const { ObjectId } = mongoose.Types;
 
 const getCampaignInfo = async (req, res) => {
@@ -14,22 +15,50 @@ const createCampaign = async (req, res) => {
         if (!name || !workspaceId) throw new Error('Missing required fields');
 
         const Workspace = mongoose.model('Workspace');
-        if (!Workspace.findById(workspaceId)) throw new Error('Workspace not found');
+        const workspace = await Workspace.findById(workspaceId);
+        if (!workspace) throw new Error('Workspace not found');
 
         const newCampaign = new Campaign({
             name,
             workspace: workspaceId,
+            basicSettings: {
+                stopSendingOnReply: {
+                    enabled: true,
+                    stopOnAutoReply: true
+                },
+                openTracking: {
+                    enabled: true,
+                    linkTracking: false
+                },
+                deliveryOptimization: false,
+                dailyLimit: 1000000
+            },
+            sendingPattern: {
+                timeGapBetweenEmails: {
+                    fixed: 7,
+                    random: 0
+                },
+                maxNewLeads: 1000000,
+                allowRiskyEmails: {
+                    enabled: false,
+                    disableBounceProtect: false
+                }
+            },
+            ccAndBcc: {
+                cc: [],
+                bcc: []
+            }
         });
 
         const campaign = await newCampaign.save();
 
-        const updateCampaignsInWorkspace = await Workspace.findByIdAndUpdate(workspaceId, { $push: { campaigns: campaign._id } });
+        await Workspace.findByIdAndUpdate(workspaceId, { $push: { campaigns: campaign._id } });
         res.success("Campaign created successfully", campaign);
 
         //TODO: Evaluar la respuesta que se dará cuando se confirme la creación de la campaña
 
     } catch (error) {
-        console.log(error)
+        console.log(error);
         return res.error(error.message);
     }
 };
@@ -70,7 +99,7 @@ const getCampaignMailAccounts = async (req, res) => {
 
         const campaign = await Campaign.findById(campaignId).select(' -_id mailAccounts').populate({
             path: 'mailAccounts',
-            select: 'email'  // Selecciona solo los campos que necesitas
+            select: 'email'
         });
 
         console.log(campaign)
@@ -87,10 +116,11 @@ const getCampaignMailAccounts = async (req, res) => {
 };
 
 // TODO: Probar settings
+// TODO: añadir validaciones cuando no hay cambios
 const updateBasicSettings = async (req, res) => {
     try {
-        const { campaignId } = req.params;
-        const update = req.body; // Solo la modificación específica
+        const { campaignId } = req.body;
+        const { update } = req.body;
 
         const campaign = await Campaign.findByIdAndUpdate(
             campaignId,
@@ -99,7 +129,7 @@ const updateBasicSettings = async (req, res) => {
         );
         if (!campaign) throw new Error('Campaign not found');
 
-        res.success("Basic settings updated successfully", campaign);
+        res.success("Basic settings updated successfully", campaign.basicSettings);
     } catch (error) {
         console.log(error);
         return res.error(error.message);
@@ -108,8 +138,8 @@ const updateBasicSettings = async (req, res) => {
 
 const updateSendingPattern = async (req, res) => {
     try {
-        const { campaignId } = req.params;
-        const update = req.body; // Solo la modificación específica
+        const { campaignId } = req.body;
+        const { update } = req.body;
 
         const campaign = await Campaign.findByIdAndUpdate(
             campaignId,
@@ -118,7 +148,7 @@ const updateSendingPattern = async (req, res) => {
         );
         if (!campaign) throw new Error('Campaign not found');
 
-        res.success("Sending pattern updated successfully", campaign);
+        res.success("Sending pattern updated successfully", campaign.sendingPattern);
     } catch (error) {
         console.log(error);
         return res.error(error.message);
@@ -127,8 +157,8 @@ const updateSendingPattern = async (req, res) => {
 
 const updateCcAndBcc = async (req, res) => {
     try {
-        const { campaignId } = req.params;
-        const update = req.body; // Solo la modificación específica
+        const { campaignId } = req.body;
+        const { update } = req.body; // Solo la modificación específica
 
         const campaign = await Campaign.findByIdAndUpdate(
             campaignId,
@@ -137,7 +167,7 @@ const updateCcAndBcc = async (req, res) => {
         );
         if (!campaign) throw new Error('Campaign not found');
 
-        res.success("CC and BCC settings updated successfully", campaign);
+        res.success("CC and BCC settings updated successfully", campaign.ccAndBcc);
     } catch (error) {
         console.log(error);
         return res.error(error.message);
@@ -146,16 +176,29 @@ const updateCcAndBcc = async (req, res) => {
 
 const createSchedule = async (req, res) => {
     try {
-        const { campaignId } = req.params;
-        const { name, timing } = req.body;
+        const { campaignId, name, timing } = req.body;
+        // TODO: validar campaña dado que la campaña no se debe vlaidar en la función propiamente 
+        if (createScheduleFunction(campaignId, name, timing)) res.success("Schedule created successfully", { campaign, schedule })
+    }
+    catch (error) {
+        console.log(error);
+        return res.error(error.message);
+    }
+};
 
-        if (!name || !timing) throw new Error('Missing required fields');
+const createScheduleFunction = async (campaignId, name, timing) => {
+    if (!campaignId) {
+        console.log('Missing campaignId');
+        return null;
+    }
 
-        const newSchedule = new Schedule({
-            name,
-            timing,
-        });
+    if (!name || !timing) {
+        console.log('Missing required fields: name or timing');
+        return null;
+    }
 
+    try {
+        const newSchedule = new Schedule({ name, timing });
         const schedule = await newSchedule.save();
 
         const campaign = await Campaign.findByIdAndUpdate(
@@ -163,15 +206,18 @@ const createSchedule = async (req, res) => {
             { $push: { schedule: schedule._id } },
             { new: true }
         );
-        if (!campaign) throw new Error('Campaign not found');
 
-        res.success("Schedule created successfully", { campaign, schedule });
+        if (!campaign) {
+            console.log('Campaign not found');
+            return null;
+        }
+
+        return schedule;
     } catch (error) {
-        console.log(error);
-        return res.error(error.message);
+        console.log('Error creating schedule:', error);
+        return null;
     }
 };
-
 module.exports = {
     getCampaignInfo,
     createCampaign,
