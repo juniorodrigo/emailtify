@@ -62,7 +62,7 @@ const campaignSchema = new mongoose.Schema({
     basicSettings: basicSettingsSubSchema,
     sendingPattern: sendingPatternSubSchema,
     ccAndBcc: ccAndBccSubSchema,
-    schedule: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Schedule' }],
+    schedules: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Schedule' }],
 }, { timestamps: true });
 
 module.exports = campaignSchema;

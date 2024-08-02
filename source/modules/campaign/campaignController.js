@@ -1,8 +1,6 @@
 const mongoose = require('mongoose');
-const helpers = require('../../common/helpers/helper');
 const Campaign = require('./models/campaignModel');
 const Schedule = require('./models/scheduleModel');
-const { ObjectId } = mongoose.Types;
 
 const getCampaignInfo = async (req, res) => {
     console.log("xd");
@@ -53,6 +51,11 @@ const createCampaign = async (req, res) => {
         const campaign = await newCampaign.save();
 
         await Workspace.findByIdAndUpdate(workspaceId, { $push: { campaigns: campaign._id } });
+        if (!campaign) throw new Error('Failed to create campaign');
+
+        let result = await createScheduleFunction(campaign._id, 'Default Schedule');
+        if (!result) throw new Error('Failed to create default schedule');
+
         res.success("Campaign created successfully", campaign);
 
         //TODO: Evaluar la respuesta que se dará cuando se confirme la creación de la campaña
@@ -217,7 +220,7 @@ const createScheduleFunction = async (campaignId, name, timing = {}) => {
         // Actualizar la campaña con el nuevo schedule
         const campaign = await Campaign.findByIdAndUpdate(
             campaignId,
-            { $push: { schedule: schedule._id } },
+            { $push: { schedules: schedule._id } },
             { new: true }
         );
 
