@@ -176,31 +176,45 @@ const updateCcAndBcc = async (req, res) => {
 
 const createSchedule = async (req, res) => {
     try {
-        const { campaignId, name, timing } = req.body;
-        // TODO: validar campaña dado que la campaña no se debe vlaidar en la función propiamente 
-        if (createScheduleFunction(campaignId, name, timing)) res.success("Schedule created successfully", { campaign, schedule })
-    }
-    catch (error) {
+        const { campaignId, name, timing = {} } = req.body;
+
+        // Validar campaña
+        const campaign = await Campaign.findById(campaignId);
+        if (!campaign) {
+            return res.error('Campaign not found');
+        }
+
+        // Crear el schedule
+        const schedule = await createScheduleFunction(campaignId, name, timing);
+
+        if (schedule) {
+            return res.success("Schedule created successfully", schedule);
+        } else {
+            return res.error("Failed to create schedule");
+        }
+    } catch (error) {
         console.log(error);
         return res.error(error.message);
     }
 };
 
-const createScheduleFunction = async (campaignId, name, timing) => {
+const createScheduleFunction = async (campaignId, name, timing = {}) => {
     if (!campaignId) {
         console.log('Missing campaignId');
         return null;
     }
 
-    if (!name || !timing) {
-        console.log('Missing required fields: name or timing');
+    if (!name) {
+        console.log('Missing required field name');
         return null;
     }
 
     try {
+        // Crear el nuevo schedule
         const newSchedule = new Schedule({ name, timing });
         const schedule = await newSchedule.save();
 
+        // Actualizar la campaña con el nuevo schedule
         const campaign = await Campaign.findByIdAndUpdate(
             campaignId,
             { $push: { schedule: schedule._id } },
@@ -218,6 +232,7 @@ const createScheduleFunction = async (campaignId, name, timing) => {
         return null;
     }
 };
+
 module.exports = {
     getCampaignInfo,
     createCampaign,
