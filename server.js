@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 
 const authnRouter = require('./source/modules/auth/routers/authnRouter');
 const authzRouter = require('./source/modules/auth/routers/authzRouter');
@@ -24,7 +25,7 @@ const startServer = async () => {
         // Middlewares
         app.use(express.json());
         app.use(responseMiddleware);
-
+        app.use(cors());
 
         // TODO: Todas las rutas deben validarse con token y con dato dentro del token para saber si tiene permisos sobre el recurso
         // Rutas
