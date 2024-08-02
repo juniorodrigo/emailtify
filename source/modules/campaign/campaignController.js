@@ -48,13 +48,15 @@ const createCampaign = async (req, res) => {
             }
         });
 
-        const campaign = await newCampaign.save();
+        let campaign = await newCampaign.save();
 
         await Workspace.findByIdAndUpdate(workspaceId, { $push: { campaigns: campaign._id } });
         if (!campaign) throw new Error('Failed to create campaign');
 
         let result = await createScheduleFunction(campaign._id, 'Default Schedule');
         if (!result) throw new Error('Failed to create default schedule');
+
+        campaign = await Campaign.findById(campaign._id).populate('schedules');
 
         res.success("Campaign created successfully", campaign);
 
@@ -201,6 +203,32 @@ const createSchedule = async (req, res) => {
     }
 };
 
+const updateSchedule = async (req, res) => {
+    try {
+        const { scheduleId, updateData } = req.body;
+
+        if (!scheduleId) throw new Error('Missing scheduleId');
+        if (!updateData || (typeof updateData !== 'object' || Array.isArray(updateData))) throw new Error('Invalid update data');
+
+
+        // Actualizar el schedule con los datos proporcionados
+        const schedule = await Schedule.findByIdAndUpdate(
+            scheduleId,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        );
+
+        if (!schedule) throw new Error('Schedule not found');
+
+        console.log('Updated schedule:', schedule);
+
+        return res.success('Schedule updated successfully', schedule);
+    } catch (error) {
+        console.log('Error updating schedule:', error);
+        return res.error(error.message);
+    }
+};
+
 const createScheduleFunction = async (campaignId, name, timing = {}) => {
     if (!campaignId) {
         console.log('Missing campaignId');
@@ -228,6 +256,8 @@ const createScheduleFunction = async (campaignId, name, timing = {}) => {
             console.log('Campaign not found');
             return null;
         }
+
+        console.log(campaign, "__________---")
 
         return schedule;
     } catch (error) {
