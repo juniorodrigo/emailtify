@@ -10,7 +10,7 @@ const authenticate = async (req, res) => {
             return res.error('Missing required fields', 400);
         }
 
-        const user = await User.findOne({ email }).select('-_id UID email lastName firstName workspaces hash');
+        const user = await User.findOne({ email }).select(' UID email lastName firstName workspaces hash');
         if (!user) {
             return res.error('Incorrect email or password', 401);
         }
