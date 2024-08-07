@@ -7,6 +7,7 @@ const authzRouter = require('./source/modules/auth/routers/authzRouter');
 const workspaceRouter = require('./source/modules/workspace/workspaceRouter');
 const mailRouter = require('./source/modules/mail/routers/mailRouter')
 const campaignRouter = require('./source/modules/campaign/campaignRouter');
+const leadRouter = require('./source/modules/lead/leadRouter');
 
 const responseMiddleware = require('./source/common/middlewares/response');
 const { connectMongo } = require('./source/database/connections/mongoConn');
@@ -34,6 +35,7 @@ const startServer = async () => {
         app.use('/workspace', workspaceRouter);
         app.use('/mail', mailRouter);
         app.use('/campaign', campaignRouter);
+        app.use('/lead', leadRouter);
 
         // Iniciar el servidor
         app.listen(PORT, () => {

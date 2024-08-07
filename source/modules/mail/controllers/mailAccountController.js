@@ -88,6 +88,16 @@ const validateSmtpConnection = async (req, res) => {
     }
 };
 
+const addGmailAccount = async (req, res) => {
+    try {
+
+    } catch (error) {
+        console.log(error)
+        res.error(error.message);
+
+    }
+}
+
 
 // Funciones puras
 const addSmtpMailAccountFunction = async (settings) => {

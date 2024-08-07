@@ -10,6 +10,7 @@ const CompanySchema = new mongoose.Schema({
     state: { type: String, index: true },
     street: { type: String },
     website: { type: String },
+    // TODO: website debe ser separado entre dominio y tld
     zipcode: { type: String }
 }, { _id: false });
 

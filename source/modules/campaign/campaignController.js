@@ -3,7 +3,22 @@ const Campaign = require('./models/campaignModel');
 const Schedule = require('./models/scheduleModel');
 
 const getCampaignInfo = async (req, res) => {
-    console.log("xd");
+    try {
+
+        const { campaignId } = req.params;
+        if (!campaignId) throw new Error('Missing required fields');
+
+        const campaign = await Campaign.findById(campaignId)
+            .populate('mailAccounts', 'email')
+            .populate('schedules');
+
+        if (!campaign) throw new Error('Campaign not found');
+
+        res.success("Campaign retrieved", campaign);
+    } catch (error) {
+        console.log(error);
+        return res.error(error.message);
+    }
 };
 
 const createCampaign = async (req, res) => {
@@ -67,6 +82,21 @@ const createCampaign = async (req, res) => {
         return res.error(error.message);
     }
 };
+
+const deleteCampaign = async (req, res) => {
+    try {
+        const { campaignId } = req.body;
+        if (!campaignId) throw new Error('Missing required fields');
+
+        const campaign = await Campaign.findByIdAndDelete(campaignId);
+        if (!campaign) throw new Error('Campaign not found');
+
+        res.success("Campaign deleted successfully");
+    } catch (error) {
+        console.log(error);
+        return res.error(error.message);
+    }
+}
 
 const addMailAccountToCampaign = async (req, res) => {
     try {
@@ -205,16 +235,16 @@ const createSchedule = async (req, res) => {
 
 const updateSchedule = async (req, res) => {
     try {
-        const { scheduleId, updateData } = req.body;
+        const { scheduleId, update } = req.body;
 
         if (!scheduleId) throw new Error('Missing scheduleId');
-        if (!updateData || (typeof updateData !== 'object' || Array.isArray(updateData))) throw new Error('Invalid update data');
+        if (!update || (typeof update !== 'object' || Array.isArray(update))) throw new Error('Invalid update data');
 
 
         // Actualizar el schedule con los datos proporcionados
         const schedule = await Schedule.findByIdAndUpdate(
             scheduleId,
-            { $set: updateData },
+            { $set: update },
             { new: true, runValidators: true }
         );
 
@@ -228,6 +258,21 @@ const updateSchedule = async (req, res) => {
         return res.error(error.message);
     }
 };
+
+const deleteSchedule = async (req, res) => {
+    try {
+        const { scheduleId } = req.body;
+        if (!scheduleId) throw new Error('Missing scheduleId');
+
+        const schedule = await Schedule.findByIdAndDelete(scheduleId);
+        if (!schedule) throw new Error('Schedule not found');
+
+        return res.success('Schedule deleted successfully', schedule);
+    } catch (error) {
+        console.log(error);
+        return res.error(error.message);
+    }
+}
 
 const createScheduleFunction = async (campaignId, name, timing = {}) => {
     if (!campaignId) {
@@ -266,9 +311,26 @@ const createScheduleFunction = async (campaignId, name, timing = {}) => {
     }
 };
 
+// Leads
+const getLeadsByCampaign = async (req, res) => {
+    try {
+        const { campaignId } = req.params;
+        if (!campaignId) throw new Error('Missing required fields');
+
+        const Lead = mongoose.model('Lead');
+        const leads = await Lead.find({ campaign: campaignId });
+
+        res.success("Leads retrieved", leads);
+    } catch (error) {
+        console.log(error);
+        return res.error(error.message);
+    }
+}
+
 module.exports = {
     getCampaignInfo,
     createCampaign,
+    deleteCampaign,
     addMailAccountToCampaign,
 
     getCampaignMailAccounts,
@@ -276,5 +338,9 @@ module.exports = {
     updateBasicSettings,
     updateSendingPattern,
     updateCcAndBcc,
-    createSchedule
+    createSchedule,
+    updateSchedule,
+    deleteSchedule,
+
+    getLeadsByCampaign
 }
